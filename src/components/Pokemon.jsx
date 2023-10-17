@@ -1,3 +1,4 @@
+import axios from "axios"
 import { useEffect } from "react"
 import { useState } from "react"
 
@@ -8,22 +9,24 @@ export function Pokemon() {
         async function getPokemons() {
             const url = 'https://pokeapi.co/api/v2/pokemon'
 
-            const mainPoke = await fetch(url)
-            const json = await mainPoke.json()
-            console.log(json.results);
 
-            json.results.forEach(async(el)=>{
-                const pokemonData = await fetch(el.url)
-                const dataJson = await pokemonData.json()
-                const newPokemon = {
-                    id:dataJson.id,
-                    name:dataJson.name,
-                    image: dataJson.sprites.front_default
-                }
-                setPokemons((pokemons)=>[...pokemons,newPokemon])
-            })
+            const mainPoke = await axios(url);
+            console.log(mainPoke.data.results);
 
-        } 
+            const promises = mainPoke.data.results.map(async (el) => {
+                const pokemonData = await axios(el.url);
+                return {
+                    id: pokemonData.data.id,
+                    name: pokemonData.data.name,
+                    image: pokemonData.data.sprites.front_default
+                };
+            });
+
+            const newPokemons = await Promise.all(promises);
+            setPokemons((pokemons) => [...pokemons, ...newPokemons]);
+
+        }
+
         getPokemons();
     }, [])
     return (
@@ -31,7 +34,7 @@ export function Pokemon() {
             <h1>Pokemon usando fetchdaasd</h1>
             {
                 pokemons.map((el) => (
-                     <article key={el.id}>
+                    <article key={el.id}>
                         <h2>{el.id}</h2>
                         <h3>{el.name}</h3>
                         <img src={el.image} alt="" />
